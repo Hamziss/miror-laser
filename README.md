@@ -1,4 +1,4 @@
-# Mirror Laser Project
+# Mirror Laser Project (Work in progress)
 
 ![Project Logo](public/images/demo.png)
 
