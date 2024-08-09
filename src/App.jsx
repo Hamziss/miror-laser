@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import ErrorPage from "./routes/error-page";
 
+import EditorPage from "./routes/editor";
 import Layout from "./routes/layout";
 import LevelsPage from "./routes/levels";
 import GamePage from "./routes/levels/id";
@@ -35,9 +36,9 @@ const router = createBrowserRouter([
         element: <GamePage />,
       },
       {
-        id: "game",
+        id: "editor",
         path: "editor",
-        element: <GamePage />,
+        element: <EditorPage />,
       },
     ],
   },

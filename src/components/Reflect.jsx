@@ -15,7 +15,7 @@ function createEvent(api, hit, intersect, intersects) {
     position: intersect.point,
     direction: intersect.direction,
     reflect: intersect.reflect,
-    normal: intersect.face.normal,
+    normal: intersect.face ? intersect.face.normal : null,
     intersect,
     intersects,
     stopPropagation: () => (hit.stopped = true),
@@ -51,6 +51,7 @@ export const Reflect = forwardRef(
         number: 0,
         objects: [],
         hits: new Map(),
+        uniqueHits: new Set(),
         start: new THREE.Vector3(),
         end: new THREE.Vector3(),
         raycaster: new THREE.Raycaster(),
@@ -64,56 +65,65 @@ export const Reflect = forwardRef(
         update: () => {
           api.number = 0;
           intersects = [];
+          const newUniqueHits = new Set();
 
           vStart.copy(api.start);
           vEnd.copy(api.end);
           vDir.subVectors(vEnd, vStart).normalize();
           vStart.toArray(api.positions, api.number++ * 3);
 
+          let rayEnded = false;
+
           // Run a full cycle until bounces run out or the ray points into nothing
-          // This is necessary for over/out hit-testing
           while (true) {
             api.raycaster.set(vStart, vDir);
             intersect = api.raycaster.intersectObjects(api.objects, false)[0];
 
-            if (api.number < bounce && intersect && intersect.face) {
-              //intersects.push({ point: intersect.point.clone(), direction: vDir.clone(), object: intersect.object });
+            if (api.number < bounce && intersect) {
               intersects.push(intersect);
               intersect.direction = vDir.clone();
 
-              // Something was hit and we still haven't met bounce limit
-              intersect.point.toArray(api.positions, api.number++ * 3);
-              vDir.reflect(
-                intersect.object
-                  .localToWorld(intersect.face.normal)
-                  .sub(intersect.object.getWorldPosition(vPos))
-                  .normalize(),
-              );
+              newUniqueHits.add(intersect.object.uuid);
 
-              intersect.reflect = vDir.clone();
-              // console.log(intersect.face.normal);
-              vStart.copy(intersect.point);
+              intersect.point.toArray(api.positions, api.number++ * 3);
+
+              if (intersect.object.noReflect) {
+                // If the object doesn't reflect, end the ray here
+                rayEnded = true;
+                break;
+              } else if (intersect.face) {
+                vDir.reflect(
+                  intersect.object
+                    .localToWorld(intersect.face.normal)
+                    .sub(intersect.object.getWorldPosition(vPos))
+                    .normalize(),
+                );
+                intersect.reflect = vDir.clone();
+                vStart.copy(intersect.point);
+              } else {
+                // If there's no face (e.g., for non-mesh objects), end the ray
+                rayEnded = true;
+                break;
+              }
             } else {
-              // Nothing was hit and the ray extends into "infinity" (dir * far)
-              vEnd
-                .addVectors(vStart, vDir.multiplyScalar(far))
-                .toArray(api.positions, api.number++ * 3);
               break;
             }
+          }
+
+          if (!rayEnded) {
+            // If the ray didn't end on an object, extend it to the far distance
+            vEnd
+              .addVectors(vStart, vDir.multiplyScalar(far))
+              .toArray(api.positions, api.number++ * 3);
           }
 
           // Reset and count up once again
           api.number = 1;
 
           // Check onRayOut
-          api.hits.forEach((hit) => {
-            // If a previous hit is no longer part of the intersects ...
-            if (
-              !intersects.find((intersect) => intersect.object.uuid === hit.key)
-            ) {
-              // Remove the hit entry
-              api.hits.delete(hit.key);
-              // And call onRayOut
+          api.hits.forEach((hit, key) => {
+            if (!newUniqueHits.has(key)) {
+              api.hits.delete(key);
               if (hit.intersect.object.onRayOut) {
                 invalidate();
                 hit.intersect.object.onRayOut(
@@ -123,20 +133,17 @@ export const Reflect = forwardRef(
             }
           });
 
-          // Check onRayOver
+          // Check onRayOver and onRayMove
           for (intersect of intersects) {
             api.number++;
 
-            // If the intersect hasn't been hit before
             if (!api.hits.has(intersect.object.uuid)) {
-              // Create new entry
               const hit = {
                 key: intersect.object.uuid,
                 intersect,
                 stopped: false,
               };
               api.hits.set(intersect.object.uuid, hit);
-              // Call ray over
 
               if (intersect.object.onRayOver) {
                 invalidate();
@@ -148,7 +155,6 @@ export const Reflect = forwardRef(
 
             const hit = api.hits.get(intersect.object.uuid);
 
-            // Check onRayMove
             if (intersect.object.onRayMove) {
               invalidate();
               intersect.object.onRayMove(
@@ -156,12 +162,14 @@ export const Reflect = forwardRef(
               );
             }
 
-            // If the hit was stopped (by the user calling stopPropagation) then interrupt the loop
-            if (hit.stopped) break;
+            if (hit.stopped || intersect.object.noReflect) break;
 
-            // If we're at the last hit and the ray hasn't been stopped it goes into the infinite
             if (intersect === intersects[intersects.length - 1]) api.number++;
           }
+
+          // Update uniqueHits with the new set
+          api.uniqueHits = newUniqueHits;
+
           return Math.max(2, api.number);
         },
       }),
@@ -172,17 +180,12 @@ export const Reflect = forwardRef(
     useImperativeHandle(fRef, () => api, [api]);
 
     useLayoutEffect(() => {
-      // Collect all objects that fulfill the criteria
       api.objects = [];
       scene.current.traverse((object) => {
-        if (
-          object.isMesh &&
-          (object.onRayOver || object.onRayOut || object.onRayMove)
-        ) {
+        if (object.onRayOver || object.onRayOut || object.onRayMove) {
           api.objects.push(object);
         }
       });
-      // Calculate world matrices at least once before it starts to raycast
       scene.current.updateWorldMatrix(true, true);
     });
 

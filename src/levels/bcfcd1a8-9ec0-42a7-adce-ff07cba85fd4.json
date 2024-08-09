@@ -1,0 +1,84 @@
+{
+  "Stars": {
+    "starSpeed": 1.5,
+    "starRadius": 150,
+    "starDepth": 50,
+    "starCount": 3000,
+    "starFactor": 3,
+    "starSaturation": 5
+  },
+  "Bloom": {
+    "bloomIntensity": 3,
+    "bloomLuminanceThreshold": 1.9,
+    "bloomLuminanceSmoothing": 1
+  },
+  "objects": [
+    {
+      "type": "Mirror",
+      "props": {
+        "position": [2.25, 1.15, 0],
+        "rotation": [0, 0, 2.35],
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1,
+        "scale": 0.5
+      }
+    },
+    {
+      "type": "Mirror",
+      "props": {
+        "position": [3.25, -1.3, 0],
+        "rotation": [0, 0, -0.8],
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1,
+        "scale": 0.5
+      }
+    },
+    {
+      "type": "Mirror",
+      "props": {
+        "position": [3.35, 3.15, 0],
+        "rotation": [0, 0, 0.8],
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1,
+        "scale": 0.5
+      }
+    },
+    {
+      "type": "Mirror",
+      "props": {
+        "position": [1.25, 2.9, 0],
+        "rotation": [0, 0, 0.8],
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1,
+        "scale": 0.5
+      }
+    },
+    {
+      "type": "Mirror",
+      "props": {
+        "position": [-2, 1.2, 0],
+        "rotation": [0, 0, 2.35],
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1,
+        "scale": 0.5
+      }
+    },
+    {
+      "type": "Triangle",
+      "props": {
+        "scale": 0.4,
+        "position": [-1.6, -1.2, 0],
+        "rotation": [1.5707963267948966, 3.4, 0]
+      }
+    }
+  ],
+  "backgroundColor": "#010000",
+  "cameraPosition": [7.35, 2.25, 9.83],
+  "sourcePosition": [2.572756777572973, 5.675189331765283, 0],
+  "globePosition": [2, 0, 0]
+}

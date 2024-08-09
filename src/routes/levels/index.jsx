@@ -16,7 +16,10 @@ export default function LevelsPage() {
             <h1 className="text-6xl">BACK TO MENU</h1>
           </Link>
           <ul className="flex flex-col gap-3 text-2xl">
-            <Link to="/levels/1" unstable_viewTransition>
+            <Link
+              to="/levels/bcfcd1a8-9ec0-42a7-adce-ff07cba85fd4"
+              unstable_viewTransition
+            >
               <li className="cursor-pointer opacity-70 hover:opacity-100">
                 LEVEL 1
               </li>

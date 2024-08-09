@@ -23,6 +23,7 @@
 		"class-variance-authority": "^0.7.0",
 		"clsx": "^2.1.1",
 		"leva": "^0.9.35",
+		"lodash": "^4.17.21",
 		"lucide-react": "^0.424.0",
 		"postprocessing": "^6.36.0",
 		"react": "^18.3.1",

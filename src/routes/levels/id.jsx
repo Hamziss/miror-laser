@@ -1,16 +1,15 @@
+import { Button } from "@/components/ui/button";
 import { OrbitControls, PerspectiveCamera, Stars } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import { useEffect, useState } from "react";
-import { CameraPositionLogger } from "../../components/camera-logger";
-import { level1 } from "../../game/levels/1";
-
-import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import Scene from "../../Scene";
-import Mirror from "../../game/objects/mirror";
-import Triangle from "../../game/objects/triangle";
+import { CameraPositionLogger } from "../../components/camera-logger";
+
+import Scene from "@/components/scene";
+import Mirror from "../../components/objects/mirror";
+import Triangle from "../../components/objects/triangle";
 
 const objectComponents = {
   Mirror,
@@ -24,11 +23,17 @@ export default function GamePage() {
   const [position, setPosition] = useState({ x: 0, y: 0, z: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [editingObjectId, setEditingObjectId] = useState(false);
+  const [sourcePosition, setSourcePosition] = useState([0, 0, 0]);
 
   useEffect(() => {
     const loadLevelData = async () => {
-      // const data = await fetchLevelData(id);
-      setLevelData(level1);
+      try {
+        const data = await import(`../../levels/${id}.json`);
+        setLevelData(data.default);
+        setSourcePosition(data.default.sourcePosition);
+      } catch (error) {
+        console.error("Error importing level data:", error);
+      }
     };
     loadLevelData();
   }, [id]);
@@ -72,7 +77,13 @@ export default function GamePage() {
       >
         <color attach="background" args={["#010000"]} />
         <PerspectiveCamera makeDefault position={[7.35, 2.25, 9.83]} />
-        <Scene setIsDragging={setIsDragging}>{sceneObjects}</Scene>
+        <Scene
+          sourcePosition={sourcePosition}
+          setSourcePosition={setSourcePosition}
+          setIsDragging={setIsDragging}
+        >
+          {sceneObjects}
+        </Scene>
         <Stars
           speed={1.5} // Speed of the star field
           radius={150} // Radius of the inner sphere containing stars
@@ -85,9 +96,9 @@ export default function GamePage() {
         <EffectComposer>
           <Bloom
             mipmapBlur
-            luminanceThreshold={2}
-            luminanceSmoothing={0.0}
-            intensity={1.4}
+            luminanceThreshold={1.9}
+            luminanceSmoothing={1}
+            intensity={3}
           />
         </EffectComposer>
         <OrbitControls

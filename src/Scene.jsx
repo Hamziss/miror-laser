@@ -8,11 +8,13 @@ import Reflect from "./components/Reflect";
 export default function Scene({ children, setIsDragging }) {
   const streaks = useRef();
   const glow = useRef();
+  const sparkles = useRef();
   const reflect = useRef();
   const sourceRef = useRef();
-  const [streakTexture, glowTexture] = useTexture([
+  const [streakTexture, glowTexture, sparkleTexture] = useTexture([
     "/textures/electric.png",
     "/textures/lensflare0_bw.jpg",
+    "/textures/lavatile.jpg", // Add this texture
   ]);
   const [cloudTexture, lavaTexture] = useTexture([
     "/textures/cloud.png",
@@ -22,9 +24,10 @@ export default function Scene({ children, setIsDragging }) {
   lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
 
   streakTexture.wrapS = streakTexture.wrapT = THREE.RepeatWrapping;
-  streakTexture.repeat.set(1, 1); // Adjust these values to control the RepeatWrapping
+  streakTexture.repeat.set(1, 1);
 
   const obj = new THREE.Object3D();
+  const sparkleObj = new THREE.Object3D();
   const f = new THREE.Vector3();
   const t = new THREE.Vector3();
   const n = new THREE.Vector3();
@@ -33,7 +36,7 @@ export default function Scene({ children, setIsDragging }) {
   let range = 0;
 
   const [sourcePosition, setSourcePosition] = useState([0, 0, 0]);
-  const fixedDirection = useMemo(() => new THREE.Vector3(0, -1, 0), []); // Fixed downward direction
+  const fixedDirection = useMemo(() => new THREE.Vector3(0, -1, 0), []);
 
   const { camera, size, viewport } = useThree();
   const aspect = size.width / viewport.width;
@@ -46,28 +49,22 @@ export default function Scene({ children, setIsDragging }) {
     ({ xy: [x, y], first, last }) => {
       if (first) setIsDragging(true);
       if (last) setIsDragging(false);
-      // Convert screen coordinates to normalized device coordinates
       const ndcX = (x / size.width) * 2 - 1;
       const ndcY = -(y / size.height) * 2 + 1;
-
-      // Set up raycaster
       raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
-
-      // Calculate the intersection point with the z=0 plane
       const intersectionPoint = new THREE.Vector3();
       raycaster.ray.intersectPlane(
         new THREE.Plane(planeNormal, 0),
         intersectionPoint,
       );
-
-      // Update source position
       setSourcePosition([intersectionPoint.x, intersectionPoint.y, 0]);
     },
     { pointerEvents: true },
   );
+
   const particleCount = 100;
   const particleSystem = useRef();
-  const [particleTexture] = useTexture(["/textures/lavatile.jpg"]); // You'll need to add this texture
+  const sparkleCount = 500; // Number of sparkles
 
   const particles = useMemo(() => {
     const temp = [];
@@ -75,9 +72,9 @@ export default function Scene({ children, setIsDragging }) {
       const t = Math.random() * 100;
       const factor = 20 + Math.random() * 100;
       const speed = 0.00000001 + Math.random() / 2000;
-      const radialDistance = Math.random() * 1; // Distance from the center
-      const theta = Math.random() * Math.PI * 2; // Angle around the circle
-      const phi = Math.random() * Math.PI; // Angle from top to bottom
+      const radialDistance = Math.random() * 1;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
       temp.push({
         t,
         factor,
@@ -93,23 +90,35 @@ export default function Scene({ children, setIsDragging }) {
     return temp;
   }, []);
 
+  const sparkleSpeed = 0.008; // New variable to control sparkle speed
+
+  const sparklesData = useMemo(() => {
+    return Array.from({ length: sparkleCount }, () => ({
+      position: new THREE.Vector3(),
+      scale: Math.random() * 0.03 + 0.01,
+      velocity: new THREE.Vector3(
+        (Math.random() - 0.5) * sparkleSpeed,
+        (Math.random() - 0.5) * sparkleSpeed,
+        (Math.random() - 0.5) * sparkleSpeed,
+      ),
+      opacity: 1,
+    }));
+  }, [sparkleSpeed]);
+
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useFrame((state) => {
     const [startX, startY] = sourcePosition;
-    // Calculate the end position by adding the fixed direction to the start position
     const endX = startX + fixedDirection.x * 5;
     const endY = startY + fixedDirection.y * 5;
 
     reflect.current.setRay([startX, startY, 0], [endX, endY, 0]);
     range = reflect.current.update();
 
-    // Update the position of the source indicator
     if (sourceRef.current) {
       sourceRef.current.position.set(startX, startY, 0);
     }
 
-    // The rest of the useFrame function remains the same
     for (i = 0; i < range - 1; i++) {
       f.fromArray(reflect.current.positions, i * 3);
       t.fromArray(reflect.current.positions, i * 3 + 3);
@@ -136,16 +145,43 @@ export default function Scene({ children, setIsDragging }) {
       obj.updateMatrix();
       glow.current.setMatrixAt(i, obj.matrix);
     }
+
+    // Update sparkles
+    sparklesData.forEach((sparkle, index) => {
+      sparkle.position.add(sparkle.velocity);
+      sparkle.opacity -= 0.01;
+
+      if (sparkle.opacity <= 0) {
+        const randomIndex = Math.floor(Math.random() * (range - 1));
+        const position = new THREE.Vector3().fromArray(
+          reflect.current.positions,
+          randomIndex * 3,
+        );
+        sparkle.position.copy(position);
+        sparkle.opacity = 1;
+        sparkle.velocity.set(
+          (Math.random() - 0.5) * sparkleSpeed,
+          (Math.random() - 0.5) * sparkleSpeed,
+          (Math.random() - 0.5) * sparkleSpeed,
+        );
+      }
+
+      sparkleObj.position.copy(sparkle.position);
+      sparkleObj.scale.setScalar(sparkle.scale * sparkle.opacity);
+      sparkleObj.updateMatrix();
+      sparkles.current.setMatrixAt(index, sparkleObj.matrix);
+    });
+
+    sparkles.current.instanceMatrix.needsUpdate = true;
+
     particles.forEach((particle, i) => {
       let { t, factor, speed, radialDistance, theta, phi } = particle;
       t = particle.t += speed / 2;
 
-      // Update particle position relative to the sun
       const x = Math.sin(phi) * Math.cos(theta) * radialDistance;
       const y = Math.cos(phi) * radialDistance;
       const z = Math.sin(phi) * Math.sin(theta) * radialDistance;
 
-      // Smoothly move particles towards the sun's position
       particle.mx += (sourcePosition[0] - particle.mx) * 1;
       particle.my += (sourcePosition[1] - particle.my) * 1;
       particle.mz += (sourcePosition[2] - particle.mz) * 1;
@@ -156,9 +192,9 @@ export default function Scene({ children, setIsDragging }) {
         particle.mz + z + Math.sin(t * factor) * 0.1,
       );
 
-      const scale = (Math.cos(t) * 0.3 + 0.7) * 0.009; // Adjust the scale value here (0.02) to reduce the size
+      const scale = (Math.cos(t) * 0.3 + 0.7) * 0.009;
       dummy.scale.set(scale, scale, scale);
-      dummy.rotation.set(t * 0.5, t * 0.3, t * 0.2); // Add some rotation for more dynamism
+      dummy.rotation.set(t * 0.5, t * 0.3, t * 0.2);
       dummy.updateMatrix();
       particleSystem.current.setMatrixAt(i, dummy.matrix);
     });
@@ -168,10 +204,9 @@ export default function Scene({ children, setIsDragging }) {
     glow.current.instanceMatrix.updateRange.count = range * 16;
     glow.current.instanceMatrix.needsUpdate = true;
 
-    // Animate the streak texture to create a fluid or laser-like effect
-    streakTexture.offset.x -= 0.0021; // Adjust the speed and direction as needed
-    lavaTexture.offset.x -= 0.00031; // Adjust the speed and direction as needed
-    lavaTexture.offset.y += 0.00021; // Adjust the speed and direction as needed
+    streakTexture.offset.x -= 0.0021;
+    lavaTexture.offset.x -= 0.00031;
+    lavaTexture.offset.y += 0.00021;
   });
 
   return (
@@ -218,7 +253,23 @@ export default function Scene({ children, setIsDragging }) {
           side={THREE.DoubleSide}
         />
       </instancedMesh>
-      {/* Draggable source indicator */}
+      <instancedMesh
+        ref={sparkles}
+        args={[null, null, sparkleCount]}
+        instanceMatrix-usage={THREE.DynamicDrawUsage}
+      >
+        <planeGeometry />
+        <meshBasicMaterial
+          map={sparkleTexture}
+          transparent
+          opacity={0.8}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          depthTest={true}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </instancedMesh>
       <mesh ref={sourceRef} {...bind()} scale={4}>
         <sphereGeometry args={[0.1, 32, 32]} />
         <meshBasicMaterial
@@ -226,10 +277,8 @@ export default function Scene({ children, setIsDragging }) {
           color={[(255 / 255) * 9, (96 / 255) * 9, (1 / 255) * 9]}
         />
       </mesh>
-      {/* 3D Particle system for the sun */}
       <instancedMesh ref={particleSystem} args={[null, null, particleCount]}>
-        <sphereGeometry args={[1, 8, 8]} />{" "}
-        {/* Use low-poly spheres for better performance */}
+        <sphereGeometry args={[1, 8, 8]} />
         <meshPhongMaterial
           color={[(255 / 255) * 9, (96 / 255) * 9, (1 / 255) * 9]}
           emissive={[(255 / 255) * 4.5, (96 / 255) * 4.5, (1 / 255) * 4.5]}
