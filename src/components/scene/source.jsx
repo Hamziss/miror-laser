@@ -1,17 +1,39 @@
 // components/Source.js
 
-import { useFrame } from "@react-three/fiber";
+import { calculateIntersectionPoint, setupTextures } from "@/lib/helpers";
+import { useGameStore } from "@/store/useGameStore";
+import { useTexture } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useDrag } from "@use-gesture/react";
+import { useRef } from "react";
 
-export default function Source({
-  sourceRef,
-  sourcePosition,
-  bind,
-  lavaTexture,
-}) {
+export default function Source() {
+  const sourceRef = useRef();
+  const { sourcePosition, setSourcePosition, setIsDragging } = useGameStore();
+  const { size, viewport, camera } = useThree();
+
+  const [lavaTexture] = useTexture(["/textures/lavatile.jpg"]);
+  setupTextures([lavaTexture]);
+  const bind = useDrag(
+    ({ xy: [x, y], first, last }) => {
+      if (first) setIsDragging(true);
+      if (last) setIsDragging(false);
+      const intersectionPoint = calculateIntersectionPoint(x, y, size, camera);
+      setSourcePosition([intersectionPoint.x, intersectionPoint.y, 0]);
+    },
+    { pointerEvents: true },
+  );
   useFrame(() => {
+    const [startX, startY] = sourcePosition;
+
     lavaTexture.offset.x -= 0.00031;
     lavaTexture.offset.y += 0.00011;
+
+    if (sourceRef.current) {
+      sourceRef.current.position.set(startX, startY, 0);
+    }
   });
+
   return (
     <mesh
       ref={sourceRef}

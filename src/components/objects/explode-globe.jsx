@@ -1,15 +1,21 @@
+import { calculateIntersectionPoint } from "@/lib/helpers";
+import { useGameStore } from "@/store/useGameStore";
 import { Sphere, useTexture } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useDrag } from "@use-gesture/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 const ExplodingGlobe = ({
-  position = [0, 0, 0],
+  // position = [0, 0, 0],
   radius = 1,
-  bind,
-  explodingGlobeRef,
-  onIntersection,
+  // bind,
+  // explodingGlobeRef,
+  // onIntersection,
 }) => {
+  const explodingGlobeRef = useRef();
+  const { setIsDragging, globePosition, setGlobePosition } = useGameStore();
+  const { size, viewport, camera } = useThree();
   const [
     baseColor,
     normalMap,
@@ -105,26 +111,35 @@ const ExplodingGlobe = ({
 
     const intersection = new THREE.Vector3();
     const intersectionPoint = ray.intersectSphere(
-      new THREE.Sphere(new THREE.Vector3(...position), radius),
+      new THREE.Sphere(new THREE.Vector3(...globePosition), radius),
       intersection,
     );
 
     if (intersectionPoint) {
-      if (onIntersection) {
-        onIntersection(intersection, null); // Pass null for reflectedDirection
-      }
+      // if (onIntersection) {
+      //   onIntersection(intersection, null); // Pass null for reflectedDirection
+      // }
 
       return { point: intersection, direction: null, noReflect: false };
     }
 
     return null;
   };
+  const ExplodingGlobeBind = useDrag(
+    ({ xy: [x, y], first, last }) => {
+      if (first) setIsDragging(true);
+      if (last) setIsDragging(false);
+      const intersectionPoint = calculateIntersectionPoint(x, y, size, camera);
+      setGlobePosition([intersectionPoint.x, intersectionPoint.y, 0]);
+    },
+    { pointerEvents: true },
+  );
 
   return (
     <group
-      position={position}
+      position={globePosition}
       ref={explodingGlobeRef}
-      {...(bind ? bind() : {})}
+      {...(ExplodingGlobeBind ? ExplodingGlobeBind() : {})}
     >
       {!exploded ? (
         <Sphere

@@ -1,11 +1,13 @@
 // components/ParticleSystem.js
+import { useGameStore } from "@/store/useGameStore";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 const PARTICLE_COUNT = 100;
 
-export default function ParticleSystem({ sourcePosition }) {
+export default function ParticleSystem() {
+  const { sourcePosition } = useGameStore();
   const particleSystemRef = useRef();
   const particles = useMemo(() => createParticles(), []);
   const dummy = useMemo(() => new THREE.Object3D(), []);

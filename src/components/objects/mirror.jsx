@@ -1,3 +1,4 @@
+import { useGameStore } from "@/store/useGameStore";
 import { TransformControls } from "@react-three/drei";
 import { useRef, useState } from "react";
 
@@ -5,12 +6,13 @@ export default function Mirror({
   width = 1,
   height = 1,
   depth = 1,
-  setIsDragging,
+  // setIsDragging,
   isEditing,
   allowXYEditor = false,
   onStartEditing,
   ...props
 }) {
+  const { setIsDragging } = useGameStore();
   const [hovered, hover] = useState(false);
   const meshRef = useRef();
   const controlsRef = useRef();

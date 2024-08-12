@@ -11,6 +11,7 @@ import Triangle from "@/components/objects/triangle";
 import Scene from "@/components/scene";
 import { Button } from "@/components/ui/button";
 import { useLevaControls } from "@/hooks/useLevaControls";
+import { useGameStore } from "@/store/useGameStore";
 
 const objectComponents = {
   Mirror,
@@ -39,16 +40,17 @@ function OptimizedCameraPositionLogger({ setPosition }) {
 
 const MemoizedCanvasContent = React.memo(function CanvasContent({
   sceneObjects,
-  isDragging,
+  // isDragging,
   editingObjectId,
-  setIsDraggingCallback,
+  // setIsDraggingCallback,
   memoizedControls,
   setPosition,
-  setSourcePosition,
-  sourcePosition = [0, 0, 0],
-  globePosition = [0, 0, 0],
-  setGlobePosition,
+  // setSourcePosition,
+  // sourcePosition = [0, 0, 0],
+  // globePosition = [0, 0, 0],
+  // setGlobePosition,
 }) {
+  const { isDragging } = useGameStore();
   return (
     <>
       <color attach="background" args={["#010000"]} />
@@ -56,11 +58,11 @@ const MemoizedCanvasContent = React.memo(function CanvasContent({
       <Scene
         isSourceDraggable={true}
         isGlobeDraggable={true}
-        sourcePosition={sourcePosition}
-        setSourcePosition={setSourcePosition}
-        globePosition={globePosition}
-        setGlobePosition={setGlobePosition}
-        setIsDragging={setIsDraggingCallback}
+        // sourcePosition={sourcePosition}
+        // setSourcePosition={setSourcePosition}
+        // globePosition={globePosition}
+        // setGlobePosition={setGlobePosition}
+        // setIsDragging={setIsDraggingCallback}
       >
         {sceneObjects}
       </Scene>
@@ -92,21 +94,28 @@ const MemoizedCanvasContent = React.memo(function CanvasContent({
   );
 });
 
+// export const useStore = create((set) => ({
+//   sourcePosition: [0, 0, 0],
+//   setSourcePosition: (newPos) => set((state) => ({ sourcePosition: newPos })),
+// }));
+
 export default function EditorPage() {
   const [levelData, setLevelData] = useState(null);
   const [position, setPosition] = useState({ x: 0, y: 0, z: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  // const [isDragging, setIsDragging] = useState(false);
   const [editingObjectId, setEditingObjectId] = useState(false);
-  const [sourcePosition, setSourcePosition] = useState([0, 0, 0]);
-  const [globePosition, setGlobePosition] = useState([0, 0, 0]);
+  // const [sourcePosition, setSourcePosition] = useState([0, 0, 0]);
+  const { setSourcePosition, setGlobePosition } = useGameStore();
+  // const [globePosition, setGlobePosition] = useState([0, 0, 0]);
   const { controls, set } = useLevaControls({
     levelData,
     setLevelData,
-    sourcePosition,
-    globePosition,
+    // sourcePosition: sourcePosition,
+    // globePosition,
   });
 
   const memoizedControls = useMemo(() => controls, Object.values(controls));
+  console.log("rerender editor");
 
   useEffect(() => {
     const loadLevelData = async () => {
@@ -124,9 +133,9 @@ export default function EditorPage() {
     loadLevelData();
   }, []);
 
-  const setIsDraggingCallback = useCallback((value) => {
-    setIsDragging(value);
-  }, []);
+  // const setIsDraggingCallback = useCallback((value) => {
+  //   setIsDragging(value);
+  // }, []);
 
   const onStartEditingCallback = useCallback((objectId) => {
     setEditingObjectId((prev) => (prev === objectId ? false : objectId));
@@ -142,7 +151,7 @@ export default function EditorPage() {
         <Component
           key={objectId}
           {...obj.props}
-          setIsDragging={setIsDraggingCallback}
+          // setIsDragging={setIsDraggingCallback}
           allowXYEditor={true}
           isEditing={editingObjectId === objectId}
           onStartEditing={() => onStartEditingCallback(objectId)}
@@ -152,7 +161,7 @@ export default function EditorPage() {
   }, [
     levelData,
     editingObjectId,
-    setIsDraggingCallback,
+    // setIsDraggingCallback,
     onStartEditingCallback,
   ]);
 
@@ -177,16 +186,16 @@ export default function EditorPage() {
         style={{ width: "100vw", height: "100vh" }}
       >
         <MemoizedCanvasContent
-          setSourcePosition={setSourcePosition}
-          sourcePosition={sourcePosition}
+          // setSourcePosition={setSourcePosition}
+          // sourcePosition={sourcePosition}
           sceneObjects={sceneObjects}
-          isDragging={isDragging}
+          // isDragging={isDragging}
           editingObjectId={editingObjectId}
-          setIsDraggingCallback={setIsDraggingCallback}
+          // setIsDraggingCallback={setIsDraggingCallback}
           memoizedControls={memoizedControls}
           setPosition={setPosition}
-          globePosition={globePosition}
-          setGlobePosition={setGlobePosition}
+          // globePosition={globePosition}
+          // setGlobePosition={setGlobePosition}
         />
       </Canvas>
     </>

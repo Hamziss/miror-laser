@@ -1,46 +1,46 @@
+import { useGameStore } from "@/store/useGameStore";
 import { button, folder, useControls } from "leva";
 import { useCallback } from "react";
 
 export function useLevaControls({
   levelData,
   setLevelData,
-  sourcePosition,
-  globePosition,
+  // sourcePosition,
+  // globePosition,
   objects,
 }) {
-  const exportSettings = useCallback(
-    (controls, levelData, sourcePosition, globePosition) => {
-      const settings = {
-        Stars: {
-          starSpeed: controls.starSpeed,
-          starRadius: controls.starRadius,
-          starDepth: controls.starDepth,
-          starCount: controls.starCount,
-          starFactor: controls.starFactor,
-          starSaturation: controls.starSaturation,
-        },
-        Bloom: {
-          bloomIntensity: controls.bloomIntensity,
-          bloomLuminanceThreshold: controls.bloomLuminanceThreshold,
-          bloomLuminanceSmoothing: controls.bloomLuminanceSmoothing,
-        },
-        ...levelData,
-        sourcePosition,
-        globePosition,
-      };
+  const exportSettings = useCallback((controls, levelData) => {
+    const sourcePosition = useGameStore.getState().sourcePosition;
+    const globePosition = useGameStore.getState().globePosition;
+    const settings = {
+      Stars: {
+        starSpeed: controls.starSpeed,
+        starRadius: controls.starRadius,
+        starDepth: controls.starDepth,
+        starCount: controls.starCount,
+        starFactor: controls.starFactor,
+        starSaturation: controls.starSaturation,
+      },
+      Bloom: {
+        bloomIntensity: controls.bloomIntensity,
+        bloomLuminanceThreshold: controls.bloomLuminanceThreshold,
+        bloomLuminanceSmoothing: controls.bloomLuminanceSmoothing,
+      },
+      ...levelData,
+      sourcePosition,
+      globePosition,
+    };
 
-      const blob = new Blob([JSON.stringify(settings, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "leva-settings.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-    [],
-  );
+    const blob = new Blob([JSON.stringify(settings, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "leva-settings.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const addMirror = useCallback(() => {
     setLevelData((prevData) => ({
@@ -78,11 +78,9 @@ export function useLevaControls({
         bloomLuminanceSmoothing: { value: 1.0, min: 0, max: 6, step: 0.1 },
       }),
       "Add Mirror": button(addMirror),
-      "Export Settings": button(() =>
-        exportSettings(controls, levelData, sourcePosition, globePosition),
-      ),
+      "Export Settings": button(() => exportSettings(controls, levelData)),
     }),
-    [levelData, addMirror, exportSettings, sourcePosition, globePosition],
+    [levelData, addMirror, exportSettings],
   );
 
   return { controls, set };
