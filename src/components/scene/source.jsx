@@ -2,19 +2,23 @@
 
 import { calculateIntersectionPoint, setupTextures } from "@/lib/helpers";
 import { useGameStore } from "@/store/useGameStore";
+import { useLevelStore } from "@/store/useLevelStore";
 import { useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useDrag } from "@use-gesture/react";
 import { useRef } from "react";
 
-export default function Source() {
+export default function Source({ isSourceDraggable = false }) {
   const sourceRef = useRef();
-  const { sourcePosition, setSourcePosition, setIsDragging } = useGameStore();
+  const { setIsDragging } = useGameStore();
+  const { sourcePosition, setSourcePosition } = useLevelStore();
+
   const { size, viewport, camera } = useThree();
 
   const [lavaTexture] = useTexture(["/textures/lavatile.jpg"]);
+
   setupTextures([lavaTexture]);
-  const bind = useDrag(
+  const dragBind = useDrag(
     ({ xy: [x, y], first, last }) => {
       if (first) setIsDragging(true);
       if (last) setIsDragging(false);
@@ -37,7 +41,7 @@ export default function Source() {
   return (
     <mesh
       ref={sourceRef}
-      {...(bind ? bind() : {})}
+      {...(isSourceDraggable ? dragBind() : {})}
       scale={4}
       position={sourcePosition}
     >

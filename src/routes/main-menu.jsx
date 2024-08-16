@@ -10,7 +10,7 @@ export default function MainMenu() {
         className="absolute left-0 top-0 z-0 min-h-full min-w-full object-cover"
       ></img>
       {/* Overlay */}
-      <div className="absolute inset-0 z-10 bg-black bg-opacity-40"></div>
+      <div className="absolute inset-0 z-10 bg-black bg-opacity-10"></div>
       <div className="relative z-20 flex h-full flex-col items-start text-white">
         <div className="z-30 flex flex-col gap-36 p-[100px] px-36">
           <h1 className="text-6xl">MENU</h1>

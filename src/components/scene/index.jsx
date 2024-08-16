@@ -1,6 +1,6 @@
 // Scene.js
-import { useGameStore } from "@/store/useGameStore";
-import { useFrame } from "@react-three/fiber";
+import { useLevelStore } from "@/store/useLevelStore";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import ExplodingGlobe from "../objects/explode-globe";
@@ -13,50 +13,13 @@ import Streaks from "./streaks";
 
 export default function Scene({
   children,
-  // setIsDragging,
   isSourceDraggable = false,
   isGlobeDraggable = false,
-  // sourcePosition,
-  // setSourcePosition,
-  // globePosition,
-  // setGlobePosition,
 }) {
-  const { sourcePosition } = useGameStore();
+  const { sourcePosition, updateCameraPosition } = useLevelStore();
+  const { camera } = useThree();
   const fixedDirection = useMemo(() => new THREE.Vector3(0, -1, 0), []);
   const reflectRef = useRef();
-  // const sourceRef = useRef();
-
-  // const { size, viewport, camera } = useThree();
-  // const aspect = size.width / viewport.width;
-
-  // const [
-  //   streakTexture,
-  //   glowTexture,
-  //   sparkleTexture,
-  //   cloudTexture,
-  //   lavaTexture,
-  // ] = useTexture([
-  //   "/textures/electric.png",
-  //   "/textures/lensflare0_bw.jpg",
-  //   "/textures/lavatile.jpg",
-  //   "/textures/cloud.png",
-  //   "/textures/lavatile.jpg",
-  // ]);
-
-  // Set up textures
-  // setupTextures([cloudTexture, lavaTexture]);
-
-  // const bind = useDrag(
-  //   ({ xy: [x, y], first, last }) => {
-  //     if (first) setIsDragging(true);
-  //     if (last) setIsDragging(false);
-  //     const intersectionPoint = calculateIntersectionPoint(x, y, size, camera);
-  //     setSourcePosition([intersectionPoint.x, intersectionPoint.y, 0]);
-  //   },
-  //   { pointerEvents: true },
-  // );
-
-  console.log("rerender scene");
 
   useFrame(() => {
     const [startX, startY] = sourcePosition;
@@ -65,6 +28,13 @@ export default function Scene({
 
     reflectRef.current.setRay([startX, startY, 0], [endX, endY, 0]);
     const range = reflectRef.current.update();
+
+    // update camera position
+    updateCameraPosition([
+      camera.position.x,
+      camera.position.y,
+      camera.position.z,
+    ]);
   });
 
   return (
@@ -77,23 +47,12 @@ export default function Scene({
         end={[0, 0, 0]}
       >
         {children}
-        <ExplodingGlobe
-          // explodingGlobeRef={explodingGlobeRef}
-          // position={globePosition}
-          radius={1}
-          // bind={isSourceDraggable ? ExplodingGlobeBind : undefined}
-        />
+        <ExplodingGlobe isGlobeDraggable={isGlobeDraggable} radius={1} />
       </Reflect>
       <Streaks reflectRef={reflectRef} />
       <Glow reflectRef={reflectRef} />
       <Sparkles reflectRef={reflectRef} />
-      <Source
-      // sourceRef={sourceRef}
-      // sourcePosition={sourcePosition}
-      // setIsDragging={setIsDragging}
-      // bind={isSourceDraggable ? bind : undefined}
-      // lavaTexture={lavaTexture}
-      />
+      <Source isSourceDraggable={isSourceDraggable} />
       <ParticleSystem />
     </>
   );

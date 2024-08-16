@@ -1,15 +1,17 @@
-import { Button } from "@/components/ui/button";
 import { OrbitControls, PerspectiveCamera, Stars } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { Home } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { CameraPositionLogger } from "../../components/camera-logger";
+import React, { useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 
+import EndGameMenu from "@/components/end-game-menu";
+import Mirror from "@/components/objects/mirror";
+import Triangle from "@/components/objects/triangle";
 import Scene from "@/components/scene";
-import Mirror from "../../components/objects/mirror";
-import Triangle from "../../components/objects/triangle";
+import { Button } from "@/components/ui/button";
+import { useGameStore } from "@/store/useGameStore";
+import { useLevelStore } from "@/store/useLevelStore";
 
 const objectComponents = {
   Mirror,
@@ -17,47 +19,91 @@ const objectComponents = {
   // Add other components here as needed
 };
 
+const MemoizedCanvasContent = React.memo(function CanvasContent({
+  sceneObjects,
+}) {
+  const { isDragging } = useGameStore();
+  const { objects, cameraPosition, loadLevelData, bloom, stars } =
+    useLevelStore((state) => ({
+      objects: state.objects,
+      stars: state.stars,
+      bloom: state.bloom,
+      loadLevelData: state.loadLevelData,
+      cameraPosition: state.cameraPosition,
+    }));
+
+  return (
+    <>
+      <color attach="background" args={["#010000"]} />
+      <PerspectiveCamera makeDefault position={cameraPosition} />
+      <Scene isSourceDraggable={false} isGlobeDraggable={false}>
+        {sceneObjects}
+      </Scene>
+      <Stars
+        speed={stars.starSpeed}
+        radius={stars.starRadius}
+        depth={stars.starDepth}
+        count={stars.starCount}
+        factor={stars.starFactor}
+        saturation={stars.starSaturation}
+        fade={true}
+      />
+      <EffectComposer>
+        <Bloom
+          mipmapBlur
+          luminanceThreshold={bloom.bloomLuminanceThreshold}
+          luminanceSmoothing={bloom.bloomLuminanceSmoothing}
+          intensity={bloom.bloomIntensity}
+        />
+      </EffectComposer>
+      <OrbitControls
+        enablePan={true}
+        enableZoom={true}
+        enableRotate={!isDragging}
+      />
+    </>
+  );
+});
+
 export default function GamePage() {
-  const { id } = useParams();
-  const [levelData, setLevelData] = useState(null);
-  const [position, setPosition] = useState({ x: 0, y: 0, z: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [editingObjectId, setEditingObjectId] = useState(false);
-  const [sourcePosition, setSourcePosition] = useState([0, 0, 0]);
+  const { objects, loadLevelData } = useLevelStore((state) => ({
+    objects: state.objects,
+    loadLevelData: state.loadLevelData,
+  }));
+  const { editingObjectId, setGlobeExploded, setEditingObjectId, reset } =
+    useGameStore();
 
   useEffect(() => {
-    const loadLevelData = async () => {
-      try {
-        const data = await import(`../../levels/${id}.json`);
-        setLevelData(data.default);
-        setSourcePosition(data.default.sourcePosition);
-      } catch (error) {
-        console.error("Error importing level data:", error);
-      }
-    };
-    loadLevelData();
-  }, [id]);
+    loadLevelData("bcfcd1a8-9ec0-42a7-adce-ff07cba85fd4");
+  }, [loadLevelData]);
 
-  if (!levelData) {
+  const sceneObjects = useMemo(() => {
+    if (!objects.length) return [];
+
+    return objects.map((obj, index) => {
+      const Component = objectComponents[obj.type];
+      const objectId = `${obj.type}-${index}`;
+
+      return (
+        <Component
+          key={objectId}
+          objectId={objectId}
+          {...obj.props}
+          allowXYEditor={false}
+          isEditing={editingObjectId === objectId}
+          onStartEditing={() => setEditingObjectId(objectId)}
+        />
+      );
+    });
+  }, [objects, editingObjectId, setEditingObjectId]);
+
+  if (!objects.length) {
     return <div>Loading...</div>;
   }
-
-  const sceneObjects = levelData.objects.map((obj, index) => {
-    const Component = objectComponents[obj.type];
-    return (
-      <Component
-        key={`${obj.type}-${index}`}
-        {...obj.props}
-        setIsDragging={setIsDragging}
-        isEditing={editingObjectId === `${obj.type}-${index}`}
-        onStartEditing={() =>
-          setEditingObjectId((prev) =>
-            prev === `${obj.type}-${index}` ? false : `${obj.type}-${index}`,
-          )
-        }
-      />
-    );
-  });
+  const resetLevel = () => {
+    reset();
+    loadLevelData("bcfcd1a8-9ec0-42a7-adce-ff07cba85fd4");
+  };
 
   return (
     <>
@@ -70,45 +116,14 @@ export default function GamePage() {
           <Home />
         </Button>
       </Link>
+      <EndGameMenu onRestart={() => resetLevel()} />
       <Canvas
         orthographic
         camera={{ zoom: 100 }}
         style={{ width: "100vw", height: "100vh" }}
       >
-        <color attach="background" args={["#010000"]} />
-        <PerspectiveCamera makeDefault position={[7.35, 2.25, 9.83]} />
-        <Scene
-          sourcePosition={sourcePosition}
-          setSourcePosition={setSourcePosition}
-          setIsDragging={setIsDragging}
-        >
-          {sceneObjects}
-        </Scene>
-        <Stars
-          speed={1.5} // Speed of the star field
-          radius={150} // Radius of the inner sphere containing stars
-          depth={50} // Depth of the area where stars can be placed
-          count={3000} // Number of stars
-          factor={3} // Size factor for the stars
-          saturation={5} // Saturation of the stars
-          fade={true} // Whether the stars should fade as they get farther away
-        />
-        <EffectComposer>
-          <Bloom
-            mipmapBlur
-            luminanceThreshold={1.9}
-            luminanceSmoothing={1}
-            intensity={3}
-          />
-        </EffectComposer>
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={!isDragging && !editingObjectId}
-        />
-        <CameraPositionLogger setPosition={setPosition} />
-      </Canvas>{" "}
-      {/* <PositionDisplay position={position} /> */}
+        <MemoizedCanvasContent sceneObjects={sceneObjects} />
+      </Canvas>
     </>
   );
 }

@@ -15,7 +15,11 @@ export default function Glow({ reflectRef }) {
     const range = reflectRef.current.update();
     updateGlow(glowRef, reflectRef, range, obj, state.clock);
   });
-
+  const orangeColorLight = [
+    (255 / 255) * 6.16,
+    (37 / 255) * 6.16,
+    (26 / 255) * 6.16,
+  ];
   return (
     <instancedMesh
       ref={glowRef}
@@ -26,6 +30,7 @@ export default function Glow({ reflectRef }) {
       <meshBasicMaterial
         map={glowTexture}
         transparent
+        color={orangeColorLight}
         opacity={0.05}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
@@ -43,7 +48,7 @@ function updateGlow(glowRef, reflectRef, range, obj, clock) {
 
   for (let i = 1; i < range; i++) {
     obj.position.fromArray(reflectRef.current.positions, i * 3);
-    obj.scale.setScalar(1.5);
+    obj.scale.setScalar(3);
     obj.rotation.set(0, 0, clock.elapsedTime / 10);
     obj.updateMatrix();
     glowRef.current.setMatrixAt(i, obj.matrix);

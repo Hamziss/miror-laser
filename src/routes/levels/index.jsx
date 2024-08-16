@@ -1,7 +1,13 @@
+import { levels } from "@/contants";
+import { cn } from "@/lib/utils";
+import { useUserStore } from "@/store/useUser";
 import React from "react";
 import { Link } from "react-router-dom";
 
 export default function LevelsPage() {
+  const { currentLevelId, levelKey } = useUserStore();
+  console.log("currentLevel", currentLevelId);
+  console.log("levelKey", levelKey);
   return (
     <main className="relative h-screen w-full overflow-hidden">
       <img
@@ -16,17 +22,37 @@ export default function LevelsPage() {
             <h1 className="text-6xl">BACK TO MENU</h1>
           </Link>
           <ul className="flex flex-col gap-3 text-2xl">
-            <Link
-              to="/levels/bcfcd1a8-9ec0-42a7-adce-ff07cba85fd4"
-              unstable_viewTransition
-            >
+            {levels.map((level) => (
+              <Link
+                to={
+                  levels.find((item) => item.id === currentLevelId).level >=
+                  level.level
+                    ? `/levels/${level.id}`
+                    : null
+                }
+                key={level.id}
+                unstable_viewTransition
+              >
+                <li
+                  className={cn(
+                    "cursor-pointer opacity-70 hover:opacity-100",
+                    levels.find((item) => item.id === currentLevelId).level <
+                      level.level &&
+                      "cursor-not-allowed line-through opacity-40 hover:opacity-40",
+                  )}
+                >
+                  {level.category.toUpperCase()} {level.level}
+                </li>
+              </Link>
+            ))}
+            {/*             
               <li className="cursor-pointer opacity-70 hover:opacity-100">
                 LEVEL 1
               </li>
-            </Link>
+            
             <li className="cursor-pointer line-through opacity-40">LEVEL 2</li>
             <li className="cursor-pointer line-through opacity-40">LEVEL 3</li>
-            <li className="cursor-pointer line-through opacity-40">LEVEL 4</li>
+            <li className="cursor-pointer line-through opacity-40">LEVEL 4</li> */}
           </ul>
         </div>
       </div>

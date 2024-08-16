@@ -1,21 +1,22 @@
 import { calculateIntersectionPoint } from "@/lib/helpers";
 import { useGameStore } from "@/store/useGameStore";
+import { useLevelStore } from "@/store/useLevelStore";
+import { useUserStore } from "@/store/useUser";
 import { Sphere, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useDrag } from "@use-gesture/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import * as THREE from "three";
 
-const ExplodingGlobe = ({
-  // position = [0, 0, 0],
-  radius = 1,
-  // bind,
-  // explodingGlobeRef,
-  // onIntersection,
-}) => {
+const ExplodingGlobe = ({ radius = 1, isGlobeDraggable = false }) => {
   const explodingGlobeRef = useRef();
-  const { setIsDragging, globePosition, setGlobePosition } = useGameStore();
+  const { id } = useParams();
+  const { globePosition, setGlobePosition } = useLevelStore();
+  const { levelKey, setCurrentLevelId, setLevelKey } = useUserStore();
+  const { setIsDragging, isGlobeExploded, setLevelCompleted } = useGameStore();
   const { size, viewport, camera } = useThree();
+  const navigate = useNavigate();
   const [
     baseColor,
     normalMap,
@@ -34,7 +35,7 @@ const ExplodingGlobe = ({
 
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef();
-  const [exploded, setExploded] = useState(false);
+
   const fragmentsRef = useRef([]);
   const explosionTimeoutRef = useRef(null);
 
@@ -82,20 +83,38 @@ const ExplodingGlobe = ({
   };
 
   useEffect(() => {
-    if (hovered && !exploded) {
+    if (hovered && !isGlobeExploded) {
       explosionTimeoutRef.current = setTimeout(() => {
-        setExploded(true);
+        useGameStore.getState().setGlobeExploded(true);
         createFragments();
+        setTimeout(() => setLevelCompleted(true), 1000); // Delay of 1000ms before setting level completed
+        fetch("http://localhost:5000" + `/levels/${id}`, {
+          method: "POST",
+          body: JSON.stringify({ levelKey: levelKey }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }).then(async (res) => {
+          const data = await res.json();
+          setCurrentLevelId(data.next_level);
+          setLevelKey(data.next_level_hash);
+        });
       }, 500); // Delay of 500ms before exploding
     } else {
       clearTimeout(explosionTimeoutRef.current);
     }
 
     return () => clearTimeout(explosionTimeoutRef.current);
-  }, [hovered, exploded]);
+  }, [hovered, isGlobeExploded]);
+
+  useEffect(() => {
+    if (!isGlobeExploded) {
+      fragmentsRef.current = [];
+    }
+  }, [isGlobeExploded]);
 
   useFrame(() => {
-    if (exploded) {
+    if (isGlobeExploded) {
       fragmentsRef.current.forEach((fragment) => {
         fragment.position.add(fragment.velocity);
         fragment.rotation.x += 0.01;
@@ -107,7 +126,7 @@ const ExplodingGlobe = ({
   });
 
   const handleRayIntersection = (ray) => {
-    if (exploded) return null;
+    if (isGlobeExploded) return null;
 
     const intersection = new THREE.Vector3();
     const intersectionPoint = ray.intersectSphere(
@@ -139,9 +158,9 @@ const ExplodingGlobe = ({
     <group
       position={globePosition}
       ref={explodingGlobeRef}
-      {...(ExplodingGlobeBind ? ExplodingGlobeBind() : {})}
+      {...(ExplodingGlobeBind && isGlobeDraggable ? ExplodingGlobeBind() : {})}
     >
-      {!exploded ? (
+      {!isGlobeExploded ? (
         <Sphere
           ref={meshRef}
           onRayOver={(e) => setHovered(true)}

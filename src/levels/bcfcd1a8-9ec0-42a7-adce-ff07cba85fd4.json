@@ -1,5 +1,5 @@
 {
-  "Stars": {
+  "stars": {
     "starSpeed": 1.5,
     "starRadius": 150,
     "starDepth": 50,
@@ -7,67 +7,12 @@
     "starFactor": 3,
     "starSaturation": 5
   },
-  "Bloom": {
+  "bloom": {
     "bloomIntensity": 3,
     "bloomLuminanceThreshold": 1.9,
     "bloomLuminanceSmoothing": 1
   },
   "objects": [
-    {
-      "type": "Mirror",
-      "props": {
-        "position": [2.25, 1.15, 0],
-        "rotation": [0, 0, 2.35],
-        "width": 0.2,
-        "height": 2.1,
-        "depth": 2.1,
-        "scale": 0.5
-      }
-    },
-    {
-      "type": "Mirror",
-      "props": {
-        "position": [3.25, -1.3, 0],
-        "rotation": [0, 0, -0.8],
-        "width": 0.2,
-        "height": 2.1,
-        "depth": 2.1,
-        "scale": 0.5
-      }
-    },
-    {
-      "type": "Mirror",
-      "props": {
-        "position": [3.35, 3.15, 0],
-        "rotation": [0, 0, 0.8],
-        "width": 0.2,
-        "height": 2.1,
-        "depth": 2.1,
-        "scale": 0.5
-      }
-    },
-    {
-      "type": "Mirror",
-      "props": {
-        "position": [1.25, 2.9, 0],
-        "rotation": [0, 0, 0.8],
-        "width": 0.2,
-        "height": 2.1,
-        "depth": 2.1,
-        "scale": 0.5
-      }
-    },
-    {
-      "type": "Mirror",
-      "props": {
-        "position": [-2, 1.2, 0],
-        "rotation": [0, 0, 2.35],
-        "width": 0.2,
-        "height": 2.1,
-        "depth": 2.1,
-        "scale": 0.5
-      }
-    },
     {
       "type": "Triangle",
       "props": {
@@ -75,10 +20,33 @@
         "position": [-1.6, -1.2, 0],
         "rotation": [1.5707963267948966, 3.4, 0]
       }
+    },
+    {
+      "objectId": "Mirror-1",
+      "type": "Mirror",
+      "props": {
+        "position": [-1.7468128041455053, 1.7743119768176268, 0],
+        "rotation": [0, 0, -0.8624796554185711, "XYZ"],
+        "scale": 0.5,
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1
+      }
+    },
+    {
+      "objectId": "Mirror-2",
+      "type": "Mirror",
+      "props": {
+        "position": [-0.260464803969505, 1.888094473033639, 0],
+        "rotation": [0, 0, -0.79191991006019, "XYZ"],
+        "scale": 0.5,
+        "width": 0.2,
+        "height": 2.1,
+        "depth": 2.1
+      }
     }
   ],
-  "backgroundColor": "#010000",
-  "cameraPosition": [7.35, 2.25, 9.83],
-  "sourcePosition": [2.572756777572973, 5.675189331765283, 0],
-  "globePosition": [2, 0, 0]
+  "sourcePosition": [-0.4704957325276584, 5.105667196735836, 0],
+  "globePosition": [4.436371109390491, -1.0197467576751793, 0],
+  "cameraPosition": [-0.974200403996948, 4.596707867523708, 11.56006532652417]
 }

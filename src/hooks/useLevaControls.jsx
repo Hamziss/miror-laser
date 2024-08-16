@@ -1,19 +1,13 @@
 import { useGameStore } from "@/store/useGameStore";
+import { useLevelStore } from "@/store/useLevelStore";
 import { button, folder, useControls } from "leva";
 import { useCallback } from "react";
 
-export function useLevaControls({
-  levelData,
-  setLevelData,
-  // sourcePosition,
-  // globePosition,
-  objects,
-}) {
-  const exportSettings = useCallback((controls, levelData) => {
-    const sourcePosition = useGameStore.getState().sourcePosition;
-    const globePosition = useGameStore.getState().globePosition;
+export function useLevaControls() {
+  const exportSettings = useCallback((controls) => {
+    const { stars, bloom, ...levelStore } = useLevelStore.getState();
     const settings = {
-      Stars: {
+      stars: {
         starSpeed: controls.starSpeed,
         starRadius: controls.starRadius,
         starDepth: controls.starDepth,
@@ -21,14 +15,12 @@ export function useLevaControls({
         starFactor: controls.starFactor,
         starSaturation: controls.starSaturation,
       },
-      Bloom: {
+      bloom: {
         bloomIntensity: controls.bloomIntensity,
         bloomLuminanceThreshold: controls.bloomLuminanceThreshold,
         bloomLuminanceSmoothing: controls.bloomLuminanceSmoothing,
       },
-      ...levelData,
-      sourcePosition,
-      globePosition,
+      ...levelStore,
     };
 
     const blob = new Blob([JSON.stringify(settings, null, 2)], {
@@ -43,24 +35,25 @@ export function useLevaControls({
   }, []);
 
   const addMirror = useCallback(() => {
-    setLevelData((prevData) => ({
-      ...prevData,
-      objects: [
-        ...prevData.objects,
-        {
-          type: "Mirror",
-          props: {
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
-            scale: 0.5,
-            width: 0.2,
-            height: 2.1,
-            depth: 2.1,
-          },
-        },
-      ],
-    }));
-  }, [setLevelData]);
+    const currentObjects = useLevelStore.getState().objects;
+    const objectId = `Mirror-${currentObjects.length}`;
+    useLevelStore.getState().addObject({
+      objectId,
+      type: "Mirror",
+      props: {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: 0.5,
+        width: 0.2,
+        height: 2.1,
+        depth: 2.1,
+      },
+    });
+  }, [useLevelStore]);
+
+  const resetGlobe = useCallback(() => {
+    useLevelStore.getState().setGlobeExploded(false);
+  }, []);
 
   const [controls, set] = useControls(
     () => ({
@@ -77,10 +70,20 @@ export function useLevaControls({
         bloomLuminanceThreshold: { value: 1.9, min: 0, max: 5, step: 0.1 },
         bloomLuminanceSmoothing: { value: 1.0, min: 0, max: 6, step: 0.1 },
       }),
+      "Reset Exploding Globe": button(resetGlobe),
       "Add Mirror": button(addMirror),
-      "Export Settings": button(() => exportSettings(controls, levelData)),
+      "Delete Current Mirror": button(() => {
+        const object = useLevelStore
+          .getState()
+          .objects.find(
+            (o) => o.objectId === useGameStore.getState().editingObjectId,
+          );
+
+        useLevelStore.getState().deleteObject(object);
+      }),
+      "Export Settings": button(() => exportSettings(controls)),
     }),
-    [levelData, addMirror, exportSettings],
+    [addMirror, exportSettings, resetGlobe],
   );
 
   return { controls, set };
